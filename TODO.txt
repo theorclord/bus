@@ -1,0 +1,6 @@
+TODO:
+Enter player names
+
+Check font size for each panel.
+
+Load correct sprites for each card
