@@ -9,6 +9,7 @@ public enum CardType
     Take = 1,
     Bus = 2,
     BusRide = 3,
+    Display = 4,
 }
 
 public class CardObject : MonoBehaviour
@@ -34,9 +35,7 @@ public class CardObject : MonoBehaviour
         if (!Turned)
         {
             Turned = true;
-            // Load sprite
-            //TODO fix this to load correct sprite
-            gameObject.GetComponent<SpriteRenderer>().sprite = Resources.Load("Sprites/HjerterTemplate", typeof(Sprite)) as Sprite;
+            SetSprite();
         } else
         {
             gameObject.GetComponent<SpriteRenderer>().sprite = Resources.Load("Sprites/BackSide", typeof(Sprite)) as Sprite;
@@ -49,5 +48,29 @@ public class CardObject : MonoBehaviour
         CardInfo = card;
         Sips = sips;
         Type = type;
+        if(Turned)
+        {
+            SetSprite();
+        }
+    }
+
+    private void SetSprite()
+    {
+        // Load sprite
+        // TODO add for clubs and spades
+        string spriteName = "";
+        switch (CardInfo.Suit)
+        {
+            case Suit.Diamond:
+                spriteName = CardInfo.Value > 10 ? "HjerterTemplate" : CardInfo.Value + "Ruder";
+                break;
+            case Suit.Hearts:
+                spriteName = CardInfo.Value > 10 ? "HjerterTemplate" : CardInfo.Value + "Hjerter";
+                break;
+            default:
+                spriteName = "HjerterTemplate";
+                break;
+        }
+        gameObject.GetComponent<SpriteRenderer>().sprite = Resources.Load("Sprites/" + spriteName, typeof(Sprite)) as Sprite;
     }
 }

@@ -54,6 +54,9 @@ public class BusGameController : MonoBehaviour
 
     #endregion
 
+    // Holds the graphic of the last played card
+    public GameObject LastCardPlayed;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -84,60 +87,66 @@ public class BusGameController : MonoBehaviour
             if (hit.transform != null)
             {
                 CardObject cardSelected = hit.transform.gameObject.GetComponent<CardObject>();
-                Debug.Log("Selected card: " + cardSelected.CardInfo.ToString());
-                if (!cardSelected.Turned)
+                if (cardSelected.CardInfo != null)
                 {
-                    cardSelected.TurnCard();
-                    if (cardSelected.Type == CardType.BusRide)
+                    Debug.Log("Selected card: " + cardSelected.CardInfo.ToString());
+                    if (!cardSelected.Turned)
                     {
-                        //Bus
-                        CardsActiveOnBus.Add(cardSelected);
-                        // handle drawing bus cards
-                        if (cardSelected.CardInfo.Value >= 10 || cardSelected.CardInfo.Value == 1)
+                        cardSelected.TurnCard();
+                        if (cardSelected.Type == CardType.BusRide)
                         {
-                            // they drink
-                            var drinkCounter = 0;
-                            foreach (var card in CardsActiveOnBus)
+                            //Bus
+                            CardsActiveOnBus.Add(cardSelected);
+                            // display the turned card
+                            DisplayCard(cardSelected.CardInfo);
+                            // handle drawing bus cards
+                            if (cardSelected.CardInfo.Value >= 10 || cardSelected.CardInfo.Value == 1)
                             {
-                                // TODO move the draw new card when turning to the card object class.
-                                // Use public method to draw the card from singleton
-                                card.CardInfo = DrawCard(Deck);
-                                card.TurnCard();
-                                drinkCounter++;
+                                // they drink
+                                var drinkCounter = 0;
+                                foreach (var card in CardsActiveOnBus)
+                                {
+                                    // TODO move the draw new card when turning to the card object class.
+                                    // Use public method to draw the card from singleton
+                                    card.CardInfo = DrawCard(Deck);
+                                    card.TurnCard();
+                                    drinkCounter++;
+                                }
+                                var playersToDrink = new StringBuilder();
+                                foreach (var p in PlayersOnBus)
+                                {
+                                    playersToDrink.Append(p.Name + ", ");
+                                }
+                                playersToDrink.Append("skal drikke " + drinkCounter + " tåre");
+                                CardsActiveOnBus = new List<CardObject>();
+                                ActionText.GetComponent<Text>().text = playersToDrink.ToString();
                             }
-                            var playersToDrink = new StringBuilder();
-                            foreach (var p in PlayersOnBus)
-                            {
-                                playersToDrink.Append(p.Name + ", ");
-                            }
-                            playersToDrink.Append("skal drikke " + drinkCounter + " tåre");
-                            CardsActiveOnBus = new List<CardObject>();
-                            ActionText.GetComponent<Text>().text = playersToDrink.ToString();
-                        }
-                    }
-                    else
-                    {
-                        //guitar
-                        var actionTaken = CheckCardActionGuitar(cardSelected.CardInfo, cardSelected.Type, cardSelected.Sips);
-                        if (!actionTaken)
-                        {
-                            // draw new card
-                            cardSelected.CardInfo = DrawCard(Deck);
-                            cardSelected.TurnCard();
                         }
                         else
                         {
-                            if (GiveActionPlayers.Count > 0)
+                            //guitar
+                            var actionTaken = CheckCardActionGuitar(cardSelected.CardInfo, cardSelected.Type, cardSelected.Sips);
+                            DisplayCard(cardSelected.CardInfo);
+                            if (!actionTaken)
                             {
-                                GiveActionPlayers.OrderBy(pair => pair.Player.Name);
-                                // set active selection panel
-                                GivePanel.SetActive(true);
-                                // fill dropdown
-                                var dropDown = GivePanel.GetComponentInChildren<Dropdown>();
-                                List<string> playerNames = Players.Select(p => p.Name).ToList();
-                                dropDown.ClearOptions();
-                                dropDown.AddOptions(playerNames);
-                                SetActionPair();
+                                // draw new card
+                                cardSelected.CardInfo = DrawCard(Deck);
+                                cardSelected.TurnCard();
+                            }
+                            else
+                            {
+                                if (GiveActionPlayers.Count > 0)
+                                {
+                                    GiveActionPlayers.OrderBy(pair => pair.Player.Name);
+                                    // set active selection panel
+                                    GivePanel.SetActive(true);
+                                    // fill dropdown
+                                    var dropDown = GivePanel.GetComponentInChildren<Dropdown>();
+                                    List<string> playerNames = Players.Select(p => p.Name).ToList();
+                                    dropDown.ClearOptions();
+                                    dropDown.AddOptions(playerNames);
+                                    SetActionPair();
+                                }
                             }
                         }
                     }
@@ -201,7 +210,6 @@ public class BusGameController : MonoBehaviour
         int lastIndex = deck.Count - 1;
         // TODO handle empty deck
         var currentCard = deck[lastIndex];
-        Debug.Log(currentCard.ToString());
         deck.RemoveAt(lastIndex);
         return currentCard;
     }
@@ -212,6 +220,8 @@ public class BusGameController : MonoBehaviour
         var currentCard = DrawCard(Deck);
         DispenseSips(CurrentPlayer, 1, suits.Contains(currentCard.Suit));
         CurrentPlayer.Hand.Add(currentCard);
+
+        DisplayCard(currentCard);
     }
 
     private void StartGuitar()
@@ -227,12 +237,10 @@ public class BusGameController : MonoBehaviour
         {
             // TopCard
             var topCard = DrawCard(Deck);
-            //Guitar.GiveCards[i] = topCard;
             PlaceCard(startSize * -5 + 5 * i, 0, topCard, i + 1, CardType.Give);
 
             // BottomCard
             var bottomCard = DrawCard(Deck);
-            //Guitar.TakeCards[i] = bottomCard;
             PlaceCard(startSize * -5 + 5 * i, -7.5f, bottomCard, i + 1, CardType.Take);
         }
         PlaceCard(startSize * -5 + 5 * (length), -3.75f, busCard, 0, CardType.Bus);
@@ -335,6 +343,7 @@ public class BusGameController : MonoBehaviour
     {
         Suit suit = (Suit)suitIndex;
         var currentCard = DrawCard(Deck);
+        DisplayCard(currentCard);
 
         DispenseSips(CurrentPlayer, 4, currentCard.Suit == suit);
         CurrentPlayer.Hand.Add(currentCard);
@@ -361,6 +370,7 @@ public class BusGameController : MonoBehaviour
         var exists = CurrentPlayer.Hand.Exists(c => c.Value == currentCard.Value);
         DispenseSips(CurrentPlayer, sips, exists);
         CurrentPlayer.Hand.Add(currentCard);
+        DisplayCard(currentCard);
         NextPlayer();
     }
 
@@ -386,6 +396,7 @@ public class BusGameController : MonoBehaviour
             DispenseSips(currentPlayer, 2, ace ? false : currentPlayer.Hand[0].Value > currentCard.Value);
         }
         CurrentPlayer.Hand.Add(currentCard);
+        DisplayCard(currentCard);
         NextPlayer();
     }
 
@@ -414,6 +425,7 @@ public class BusGameController : MonoBehaviour
             DispenseSips(currentPlayer, 3, ace ? false : (existAbove || existBelow) && !isInside);
         }
         CurrentPlayer.Hand.Add(currentCard);
+        DisplayCard(currentCard);
         NextPlayer();
     }
 
@@ -484,7 +496,7 @@ public class BusGameController : MonoBehaviour
     /// <param name="type">The type of action there is to be taken which flipping the card</param>
     private void PlaceCard(float xcoord, float ycoord, Card card, int sips, CardType type)
     {
-        var cardObj = Instantiate(Resources.Load("HjerterTemplate") as GameObject, new Vector3(xcoord, ycoord), Quaternion.identity) as GameObject;
+        var cardObj = Instantiate(Resources.Load("CardTemplate") as GameObject, new Vector3(xcoord, ycoord), Quaternion.identity) as GameObject;
         var cardObjTop = cardObj.GetComponent<CardObject>();
         cardObjTop.SetCardInfo(card, sips, type);
         CardsOnTable.Add(cardObj);
@@ -498,7 +510,7 @@ public class BusGameController : MonoBehaviour
             Destroy(gObj);
         }
         CardsOnTable = new List<GameObject>();
-        StaticHelperFunctions.ResetCards();
+        Deck = StaticHelperFunctions.ResetCards();
         // create the bus pattern
         var busSize = 5;
         var startSize = busSize / 2;
@@ -557,6 +569,17 @@ public class BusGameController : MonoBehaviour
     {
         PlayerText.GetComponent<Text>().text = CurrentPlayer.Name;
         HandText.text = string.Join(",", CurrentPlayer.Hand);
+    }
+
+    private void DisplayCard(Card card)
+    {
+        // Display last drawn card
+        var lastPlayedCardObj = LastCardPlayed.GetComponent<CardObject>();
+        lastPlayedCardObj.SetCardInfo(card, 0, CardType.Display);
+        if (!lastPlayedCardObj.Turned)
+        {
+            lastPlayedCardObj.TurnCard();
+        }
     }
     #endregion
 }
