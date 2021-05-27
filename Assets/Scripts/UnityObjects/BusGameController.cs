@@ -6,8 +6,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Text;
+using UnityEngine.SceneManagement;
 
-public class GameController : MonoBehaviour
+public class BusGameController : MonoBehaviour
 {
     // game objects
     public Camera main;
@@ -46,6 +47,11 @@ public class GameController : MonoBehaviour
 
     // misc
     public Text GiveCounter;
+
+    // Add player objects
+    public GameObject AddPlayerPanel;
+    public Text CurrentPlayerText;
+
     #endregion
 
     // Start is called before the first frame update
@@ -58,17 +64,11 @@ public class GameController : MonoBehaviour
         // TODO move to another place for init
         // Player init
         Players = new List<Player>();
-        Players.Add(new Player() { Name = "Bob Test" });
-        Players.Add(new Player() { Name = "Alice Test" });
-        //Players.Add(new Player() { Name = "Natasha Test" });
-        //Players.Add(new Player() { Name = "Simba Test" });
 
         CurrentPlayerIndex = 0;
 
-        SetActivePlayer();
-
         // initialize deck of cards
-        ResetCards();
+        Deck = StaticHelperFunctions.ResetCards();
     }
 
     // Update is called once per frame
@@ -101,7 +101,7 @@ public class GameController : MonoBehaviour
                             {
                                 // TODO move the draw new card when turning to the card object class.
                                 // Use public method to draw the card from singleton
-                                card.CardInfo = DrawCard();
+                                card.CardInfo = DrawCard(Deck);
                                 card.TurnCard();
                                 drinkCounter++;
                             }
@@ -122,7 +122,7 @@ public class GameController : MonoBehaviour
                         if (!actionTaken)
                         {
                             // draw new card
-                            cardSelected.CardInfo = DrawCard();
+                            cardSelected.CardInfo = DrawCard(Deck);
                             cardSelected.TurnCard();
                         }
                         else
@@ -185,19 +185,6 @@ public class GameController : MonoBehaviour
         }
     }
 
-    private void ShuffleDeck(List<Card> deck)
-    {
-        int n = deck.Count;
-        while (n > 1)
-        {
-            n--;
-            int k = UnityEngine.Random.Range(0, n + 1);
-            Card value = deck[k];
-            deck[k] = deck[n];
-            deck[n] = value;
-        }
-    }
-
     private void NextPlayer()
     {
         CurrentPlayerIndex++;
@@ -209,68 +196,28 @@ public class GameController : MonoBehaviour
         SetActivePlayer();
     }
 
-    private Card DrawCard()
+    private Card DrawCard(List<Card> deck)
     {
-        int lastIndex = Deck.Count - 1;
-        var currentCard = Deck[lastIndex];
+        int lastIndex = deck.Count - 1;
+        // TODO handle empty deck
+        var currentCard = deck[lastIndex];
         Debug.Log(currentCard.ToString());
-        Deck.RemoveAt(lastIndex);
+        deck.RemoveAt(lastIndex);
         return currentCard;
     }
-
-    private void ResetCards()
-    {
-        // initialize deck of cards
-        Deck = new List<Card>();
-        foreach (Suit s in Enum.GetValues(typeof(Suit)))
-        {
-            for (int i = 0; i < 12; i++)
-            {
-                Deck.Add(
-                    new Card()
-                    {
-                        Suit = s,
-                        Value = i + 1
-                    });
-            }
-        }
-
-        // shuffle the deck
-        ShuffleDeck(Deck);
-    }
-
-    private void SetActivePlayer()
-    {
-        PlayerText.GetComponent<Text>().text = CurrentPlayer.Name;
-        HandText.text = string.Join(",", CurrentPlayer.Hand);
-    }
-
+    
     private void CheckSuits(List<Suit> suits)
     {
         // check if the suit is red
-        var currentCard = DrawCard();
+        var currentCard = DrawCard(Deck);
         DispenseSips(CurrentPlayer, 1, suits.Contains(currentCard.Suit));
         CurrentPlayer.Hand.Add(currentCard);
-    }
-
-    private void DispenseSips(Player player, int amount, bool give)
-    {
-        if (give)
-        {
-            // hand out one sip
-            ActionText.GetComponent<Text>().text = player.Name + " må give " + amount + " tår";
-        }
-        else
-        {
-            // drink one sip
-            ActionText.GetComponent<Text>().text = player.Name + " skal tage " + amount + " tår";
-        }
     }
 
     private void StartGuitar()
     {
         // initialize guitar
-        var busCard = DrawCard();
+        var busCard = DrawCard(Deck);
 
         var length = 4;
         var startSize = length / 2;
@@ -279,23 +226,16 @@ public class GameController : MonoBehaviour
         for (int i = 0; i < length; i++)
         {
             // TopCard
-            var topCard = DrawCard();
+            var topCard = DrawCard(Deck);
             //Guitar.GiveCards[i] = topCard;
             PlaceCard(startSize * -5 + 5 * i, 0, topCard, i + 1, CardType.Give);
 
             // BottomCard
-            var bottomCard = DrawCard();
+            var bottomCard = DrawCard(Deck);
             //Guitar.TakeCards[i] = bottomCard;
             PlaceCard(startSize * -5 + 5 * i, -7.5f, bottomCard, i + 1, CardType.Take);
         }
         PlaceCard(startSize * -5 + 5 * (length), -3.75f, busCard, 0, CardType.Bus);
-    }
-
-    private void AssignCardInfo(CardObject cardObj, Card card, int sips, CardType type)
-    {
-        cardObj.CardInfo = card;
-        cardObj.Sips = sips;
-        cardObj.Type = type;
     }
 
     private bool CheckCardActionGuitar(Card selectedCard, CardType type, int sips)
@@ -357,77 +297,7 @@ public class GameController : MonoBehaviour
         // set name
         SetActivePlayer();
     }
-
-    private void StartBus()
-    {
-        // clear the Guitar
-        foreach (var gObj in CardsOnTable)
-        {
-            Destroy(gObj);
-        }
-        CardsOnTable = new List<GameObject>();
-        ResetCards();
-        // create the bus pattern
-        var busSize = 5;
-        var startSize = busSize / 2;
-        var busHeights = new int[] { 1, 2, 3, 2, 1 };
-
-        for (int i = 0; i < busSize; i++)
-        {
-            for (int j = 0; j < busHeights[i]; j++)
-            {
-                var busCard = DrawCard();
-                var startYcoord = 0.0f;
-                switch (busHeights[i])
-                {
-                    case 1:
-                        startYcoord = 0.0f;
-                        break;
-                    case 2:
-                        startYcoord = -4.0f;
-                        break;
-                    case 3:
-                        startYcoord = -8.0f;
-                        break;
-                    default:
-                        break;
-                }
-                PlaceCard(startSize * -5 + i * 5, startYcoord + j * 8, busCard, 0, CardType.BusRide);
-            }
-        }
-
-        if(PlayersOnBus.Count < 2)
-        {
-            // enable player selector
-            BusPassengerPanel.SetActive(true);
-            var busDropdown = BusPassengerPanel.GetComponentInChildren<Dropdown>();
-            var availablePlayers = Players.Where(p => p.Name != PlayersOnBus.First().Name).Select(p => p.Name).ToList();
-            busDropdown.ClearOptions();
-            busDropdown.AddOptions(availablePlayers);
-        }
-    }
-
-    private void PlaceCard(float xcoord, float ycoord, Card card, int sips, CardType type)
-    {
-        var cardObj = Instantiate(Resources.Load("HjerterTemplate") as GameObject, new Vector3(xcoord, ycoord), Quaternion.identity) as GameObject;
-        var cardObjTop = cardObj.GetComponent<CardObject>();
-        AssignCardInfo(cardObjTop, card, sips, type);
-        CardsOnTable.Add(cardObj);
-    }
-
-    private void SetBusNames()
-    {
-        // Set bus names
-        string playersOnBusNames = "";
-        foreach (var p in PlayersOnBus)
-        {
-            playersOnBusNames += p.Name + ", ";
-        }
-        if (!string.IsNullOrEmpty(playersOnBusNames))
-        {
-            PlayerText.GetComponent<Text>().text = playersOnBusNames;
-        }
-    }
+    
     #endregion
 
 
@@ -464,7 +334,7 @@ public class GameController : MonoBehaviour
     public void SuitCheck(int suitIndex)
     {
         Suit suit = (Suit)suitIndex;
-        var currentCard = DrawCard();
+        var currentCard = DrawCard(Deck);
 
         DispenseSips(CurrentPlayer, 4, currentCard.Suit == suit);
         CurrentPlayer.Hand.Add(currentCard);
@@ -487,7 +357,7 @@ public class GameController : MonoBehaviour
 
     public void Equal(int sips)
     {
-        var currentCard = DrawCard();
+        var currentCard = DrawCard(Deck);
         var exists = CurrentPlayer.Hand.Exists(c => c.Value == currentCard.Value);
         DispenseSips(CurrentPlayer, sips, exists);
         CurrentPlayer.Hand.Add(currentCard);
@@ -496,7 +366,7 @@ public class GameController : MonoBehaviour
 
     public void AboveOrUnder(bool above)
     {
-        var currentCard = DrawCard();
+        var currentCard = DrawCard(Deck);
         var currentPlayer = CurrentPlayer;
         if (currentPlayer.Hand.Count > 1)
         {
@@ -521,7 +391,7 @@ public class GameController : MonoBehaviour
 
     public void InsideOrOutside(bool inside)
     {
-        var currentCard = DrawCard();
+        var currentCard = DrawCard(Deck);
         var currentPlayer = CurrentPlayer;
         if (currentPlayer.Hand.Count > 2)
         {
@@ -547,6 +417,27 @@ public class GameController : MonoBehaviour
         NextPlayer();
     }
 
+    public void ResartBus()
+    {
+        SceneManager.LoadScene("Bus");
+    }
+    #endregion
+
+    #region GameObjectsInteraction
+    // This region contains all methods which interacts directly with gameobjects in the scene
+
+    public void AddPlayer(InputField inputField)
+    {
+        // get the name from the input field
+        var player = new Player() { Name = inputField.text };
+        // add to the player list
+        Players.Add(player);
+        // update the UI with current player names
+        CurrentPlayerText.text = CurrentPlayerText.text + "\n" + inputField.text;
+        // clear the text field
+        inputField.text = "";
+    }
+
     public void AddPassenger()
     {
         var dropDown = BusPassengerPanel.GetComponentInChildren<Dropdown>();
@@ -558,17 +449,114 @@ public class GameController : MonoBehaviour
         BusPassengerPanel.SetActive(false);
         SetBusNames();
     }
-    #endregion
 
-
-    #region DebugMethods
-
-    public void ShowHand()
+    public void StartGame()
     {
-        foreach (var card in CurrentPlayer.Hand)
+        AddPlayerPanel.SetActive(false);
+        First.SetActive(true);
+        SetActivePlayer();
+    }
+
+    /// <summary>
+    /// Sets the names of the players who are on the bus
+    /// </summary>
+    private void SetBusNames()
+    {
+        // Set bus names
+        string playersOnBusNames = "";
+        foreach (var p in PlayersOnBus)
         {
-            Debug.Log(card.ToString());
+            playersOnBusNames += p.Name + ", ";
         }
+        if (!string.IsNullOrEmpty(playersOnBusNames))
+        {
+            PlayerText.GetComponent<Text>().text = playersOnBusNames;
+        }
+    }
+
+    /// <summary>
+    /// Places a card in the game scene
+    /// </summary>
+    /// <param name="xcoord">X coordinate of the card object</param>
+    /// <param name="ycoord">Y coordinate of the card object</param>
+    /// <param name="card">The card information to be set on the created object</param>
+    /// <param name="sips">Number of sips associated with flipping the card. 0 for cards that have other functions</param>
+    /// <param name="type">The type of action there is to be taken which flipping the card</param>
+    private void PlaceCard(float xcoord, float ycoord, Card card, int sips, CardType type)
+    {
+        var cardObj = Instantiate(Resources.Load("HjerterTemplate") as GameObject, new Vector3(xcoord, ycoord), Quaternion.identity) as GameObject;
+        var cardObjTop = cardObj.GetComponent<CardObject>();
+        cardObjTop.SetCardInfo(card, sips, type);
+        CardsOnTable.Add(cardObj);
+    }
+
+    private void StartBus()
+    {
+        // clear the Guitar
+        foreach (var gObj in CardsOnTable)
+        {
+            Destroy(gObj);
+        }
+        CardsOnTable = new List<GameObject>();
+        StaticHelperFunctions.ResetCards();
+        // create the bus pattern
+        var busSize = 5;
+        var startSize = busSize / 2;
+        var busHeights = new int[] { 1, 2, 3, 2, 1 };
+
+        for (int i = 0; i < busSize; i++)
+        {
+            for (int j = 0; j < busHeights[i]; j++)
+            {
+                var busCard = DrawCard(Deck);
+                var startYcoord = 0.0f;
+                switch (busHeights[i])
+                {
+                    case 1:
+                        startYcoord = 0.0f;
+                        break;
+                    case 2:
+                        startYcoord = -4.0f;
+                        break;
+                    case 3:
+                        startYcoord = -8.0f;
+                        break;
+                    default:
+                        break;
+                }
+                PlaceCard(startSize * -5 + i * 5, startYcoord + j * 8, busCard, 0, CardType.BusRide);
+            }
+        }
+
+        if (PlayersOnBus.Count < 2)
+        {
+            // enable player selector
+            BusPassengerPanel.SetActive(true);
+            var busDropdown = BusPassengerPanel.GetComponentInChildren<Dropdown>();
+            var availablePlayers = Players.Where(p => p.Name != PlayersOnBus.First().Name).Select(p => p.Name).ToList();
+            busDropdown.ClearOptions();
+            busDropdown.AddOptions(availablePlayers);
+        }
+    }
+
+    private void DispenseSips(Player player, int amount, bool give)
+    {
+        if (give)
+        {
+            // hand out one sip
+            ActionText.GetComponent<Text>().text = player.Name + " må give " + amount + " tår";
+        }
+        else
+        {
+            // drink one sip
+            ActionText.GetComponent<Text>().text = player.Name + " skal tage " + amount + " tår";
+        }
+    }
+
+    private void SetActivePlayer()
+    {
+        PlayerText.GetComponent<Text>().text = CurrentPlayer.Name;
+        HandText.text = string.Join(",", CurrentPlayer.Hand);
     }
     #endregion
 }

@@ -1,6 +1,6 @@
 TODO:
-Enter player names
-
 Check font size for each panel.
 
 Load correct sprites for each card
+
+Enable removing of players from the game, by adding the players to a grid list with a button which can remove the player

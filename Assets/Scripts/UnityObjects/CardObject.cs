@@ -43,4 +43,11 @@ public class CardObject : MonoBehaviour
             Turned = false;
         }
     }
+
+    public void SetCardInfo(Card card, int sips, CardType type)
+    {
+        CardInfo = card;
+        Sips = sips;
+        Type = type;
+    }
 }
