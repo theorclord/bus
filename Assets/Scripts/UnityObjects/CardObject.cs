@@ -62,16 +62,16 @@ public class CardObject : MonoBehaviour
         switch (CardInfo.Suit)
         {
             case Suit.Clubs:
-                spriteName = CardInfo.Value > 10 ? "HjerterTemplate" : CardInfo.Value + "Klør";
+                spriteName = "Clubs/" + CardInfo.Value + "Klør";
                 break;
             case Suit.Spades:
-                spriteName = CardInfo.Value > 10 ? "HjerterTemplate" : CardInfo.Value + "Spar";
+                spriteName = "Spades/" + CardInfo.Value + "Spar";
                 break;
-            case Suit.Diamond:
-                spriteName = CardInfo.Value > 10 ? "HjerterTemplate" : CardInfo.Value + "Ruder";
+            case Suit.Diamonds:
+                spriteName = "Diamonds/" + CardInfo.Value + "Ruder";
                 break;
             case Suit.Hearts:
-                spriteName = CardInfo.Value > 10 ? "HjerterTemplate" : CardInfo.Value + "Hjerter";
+                spriteName = "Hearts/" + CardInfo.Value + "Hjerter";
                 break;
             default:
                 spriteName = "HjerterTemplate";

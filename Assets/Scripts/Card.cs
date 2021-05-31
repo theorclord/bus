@@ -9,7 +9,7 @@ namespace Assets.Scripts
     public enum Suit
     {
         Spades = 0,
-        Diamond = 1,
+        Diamonds = 1,
         Hearts = 2,
         Clubs = 3,
     }

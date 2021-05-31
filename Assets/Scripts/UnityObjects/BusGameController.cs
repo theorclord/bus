@@ -353,7 +353,7 @@ public class BusGameController : MonoBehaviour
     public void Red()
     {
         // check if the suit is red
-        CheckSuits(new List<Suit>() { Suit.Diamond, Suit.Hearts });
+        CheckSuits(new List<Suit>() { Suit.Diamonds, Suit.Hearts });
         NextPlayer();
     }
 
