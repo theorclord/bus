@@ -724,10 +724,10 @@ PlayerSettings:
     m_VersionCode: 1
     m_VersionName: 
   apiCompatibilityLevel: 6
-  cloudProjectId: 
+  cloudProjectId: ebc4871a-1089-4510-bdc1-2074cc389196
   framebufferDepthMemorylessMode: 0
-  projectName: 
-  organizationId: 
+  projectName: Bus
+  organizationId: mikkel-stolborg
   cloudEnabled: 0
   enableNativePlatformBackendsForNewInputSystem: 0
   disableOldInputManagerSupport: 0
